@@ -13,11 +13,61 @@ class MapViewController: MapListViewControllerBase, MKMapViewDelegate {
     
     @IBOutlet weak var mapView: MKMapView!
 
+    var refreshLocationsObserver: NSObjectProtocol?
+    var locationsRefreshedObserver: NSObjectProtocol?
+    
+    deinit {
+        
+        // Remove all of this object's observers. For block-based observers,
+        // we need a separate removeObserver(observer:) call for each observer.
+        if let refreshLocationsObserver = refreshLocationsObserver {
+            
+            NotificationCenter.default.removeObserver(refreshLocationsObserver)
+        }
+        if let locationsRefreshedObserver = locationsRefreshedObserver {
+            
+            NotificationCenter.default.removeObserver(locationsRefreshedObserver)
+        }
+    }
+    
     override func viewDidLoad() {
         
         super.viewDidLoad()
 
         addAnnotations()
+        
+        // Refresh the array of student locations when notified to do so.
+        refreshLocationsObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name(rawValue: UIConstants.refreshLocationsNotification),
+            object: nil,
+            queue: OperationQueue.main)
+        { [weak self] (notification: Notification) in
+            
+            if let _self = self {
+                
+                DispatchQueue.main.async {
+                    
+                    _self.refreshLocations()
+                }
+            }
+        }
+
+        // Reload the annotations based on the current student locations when
+        // told to do so.
+        locationsRefreshedObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name(rawValue: UIConstants.locationsRefreshedNotification),
+            object: nil,
+            queue: OperationQueue.main)
+        { [weak self] (notification: Notification) in
+            
+            if let _self = self {
+                
+                DispatchQueue.main.async {
+                    
+                    _self.addAnnotations()
+                }
+            }
+        }
     }
     
     // Delete the Udacity session and return to the log in view controller.
@@ -32,12 +82,6 @@ class MapViewController: MapListViewControllerBase, MKMapViewDelegate {
         refreshLocations()
     }
 
-    // Reload the map/list based on the current student locations.
-    override func onRefreshComplete() {
-        
-        addAnnotations()
-    }
-    
     // Add a student location for the current user.
     @IBAction func onAddButton(_ sender: UIBarButtonItem) {
 

@@ -11,37 +11,9 @@ import UIKit
 // Base class for map/list view controllers.
 class MapListViewControllerBase: ViewControllerBase {
     
-    var refreshLocationsObserver: NSObjectProtocol?
-
-    deinit {
-        
-        // Remove all of this object's observers. For block-based observers,
-        // we need a separate removeObserver(observer:) call for each observer.
-        if let refreshLocationsObserver = refreshLocationsObserver {
-            
-            NotificationCenter.default.removeObserver(refreshLocationsObserver)
-        }
-    }
-    
     override func viewDidLoad() {
         
         super.viewDidLoad()
-
-        // Refresh the array of student locations when notified to do so.
-        refreshLocationsObserver = NotificationCenter.default.addObserver(
-            forName: NSNotification.Name(rawValue: UIConstants.refreshLocationsNotification),
-            object: nil,
-            queue: OperationQueue.main)
-        { [weak self] (notification: Notification) in
-            
-            if let _self = self {
-                
-                DispatchQueue.main.async {
-                    
-                    _self.refreshLocations()
-                }
-            }
-        }
     }
     
     // Delete the Udacity session and return to the log in view controller.
@@ -87,10 +59,11 @@ class MapListViewControllerBase: ViewControllerBase {
             success: {
                 
                 self.requestDidSucceed()
-
+                
                 DispatchQueue.main.async {
-
-                    self.onRefreshComplete()
+                    
+                    // Notify view controllers that refresh is complete.
+                    NotificationCenter.default.post(name: NSNotification.Name(rawValue: UIConstants.locationsRefreshedNotification), object: nil)
                 }
             },
             failure: { (error: Error) in
@@ -98,13 +71,7 @@ class MapListViewControllerBase: ViewControllerBase {
                 self.requestDidFail(title: "Error Getting Student Locations", message: "\(error.localizedDescription)")
             })
     }
-
-    // Reload the map/list based on the current student locations.
-    func onRefreshComplete() {
-        
-        fatalError("Must Override")
-    }
-
+    
     // Add a student location for the current user.
     func addLocation(withSegueIdentifier: String) {
         

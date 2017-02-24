@@ -16,4 +16,5 @@ struct UIConstants {
     
     // MARK: Notifications
     static let refreshLocationsNotification = "refreshLocationsNotification"
+    static let locationsRefreshedNotification = "locationsRefreshedNotification"
 }

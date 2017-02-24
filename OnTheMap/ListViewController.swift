@@ -12,11 +12,40 @@ class ListViewController: MapListViewControllerBase, UITableViewDataSource, UITa
     
     @IBOutlet weak var tableView: UITableView!
 
+    var locationsRefreshedObserver: NSObjectProtocol?
+    
+    deinit {
+        
+        // Remove all of this object's observers. For block-based observers,
+        // we need a separate removeObserver(observer:) call for each observer.
+        if let locationsRefreshedObserver = locationsRefreshedObserver {
+            
+            NotificationCenter.default.removeObserver(locationsRefreshedObserver)
+        }
+    }
+    
     override func viewDidLoad() {
         
         super.viewDidLoad()
 
         tableView.rowHeight = 66.0
+        
+        // Reload the table based on the current student locations when told to
+        // do so.
+        locationsRefreshedObserver = NotificationCenter.default.addObserver(
+            forName: NSNotification.Name(rawValue: UIConstants.locationsRefreshedNotification),
+            object: nil,
+            queue: OperationQueue.main)
+        { [weak self] (notification: Notification) in
+            
+            if let _self = self {
+                
+                DispatchQueue.main.async {
+                    
+                    _self.tableView.reloadData()
+                }
+            }
+        }
     }
     
     // Delete the Udacity session and return to the log in view controller.
@@ -31,12 +60,6 @@ class ListViewController: MapListViewControllerBase, UITableViewDataSource, UITa
         refreshLocations()
     }
 
-    // Reload the map/list based on the current student locations.
-    override func onRefreshComplete() {
-        
-        tableView.reloadData()
-    }
-    
     // Add a student location for the current user.
     @IBAction func onAddButton(_ sender: UIBarButtonItem) {
         
